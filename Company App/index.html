@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Made By Ahsan | AALABLES Dashboard </title>
+    <title>Made By Ahsan | Factory Ops Dashboard  The Projrct Of Hadi Brother's Pvt.Ltd</title>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
     <style>
@@ -83,11 +83,19 @@
 </head>
 <body>
 
-    <header>
-        <div><b>FACTORY OPS:</b> LIVE MONITOR</div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <div id="sync-status" style="color:var(--green); font-size: 10px;">● SYNCED</div>
-            <button class="fs-btn" onclick="toggleFS()">⛶ FS</button>
+    <<header style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
+        <div style="width: 100%; display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="font-size: 11px; line-height: 1.4; letter-spacing: 0.5px;">
+                <b style="color: var(--blue);">Made By Ahsan | AA LABELS</b><br>
+                <span style="color: var(--gray); font-size: 10px;">The Project Of Hadi Brother's Pvt.Ltd</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div id="sync-status" style="color:var(--green); font-size: 10px;">● SYNCED</div>
+                <button class="fs-btn" onclick="toggleFS()">⛶ FS</button>
+            </div>
+        </div>
+        <div style="font-weight: bold; font-size: 14px; letter-spacing: 1px;">
+            FACTORY OPS <span style="color: var(--red);">LIVE MONITOR</span>
         </div>
     </header>
 
@@ -202,3 +210,4 @@
         });
     </script>
 </body>
+</html>

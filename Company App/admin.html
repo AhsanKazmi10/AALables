@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WovenOps | Admin Terminal</title>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <style>
+        :root { --bg: #0b0e11; --card: #15191e; --blue: #4da3ff; --green: #3cd070; --orange: #ff9f43; --text: #adbac7; --border: #2d333b; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 15px; user-select: none; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .logo { font-weight: bold; font-size: 1.2rem; color: #fff; }
+        .logo span { color: var(--blue); }
+
+        /* Quick Actions */
+        .section-title { font-size: 0.9rem; margin-bottom: 10px; color: #fff; }
+        .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .action-btn { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 5px; text-align: center; font-size: 0.7rem; cursor: pointer; }
+        .action-btn i { display: block; font-size: 1.2rem; margin-bottom: 5px; }
+        .action-btn.active { border-color: var(--blue); background: rgba(77, 163, 255, 0.1); }
+
+        /* Entry Form */
+        .form-card { background: var(--card); border: 1px solid var(--border); border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px; }
+        input, select { width: 100%; background: #0b0e11; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 8px; box-sizing: border-box; }
+        .amount-input { font-size: 2rem; font-weight: bold; color: var(--blue); text-align: center; border: none; background: transparent; }
+
+        .sync-btn { width: 100%; background: var(--blue); color: #fff; border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+        /* Machine Center */
+        .machine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .m-admin-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+        .m-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.8rem; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--green); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .status-footer { text-align: center; font-size: 0.8rem; color: var(--green); margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">Woven<span>Ops</span> | Admin</div>
+        <div style="font-size: 0.8rem;">👤 Logout</div>
+    </div>
+
+    <div class="section-title">Quick Actions</div>
+    <div class="quick-actions">
+        <div class="action-btn active">💰<br>CASH IN</div>
+        <div class="action-btn">☕<br>EXPENSE</div>
+        <div class="action-btn">⚙️<br>STATUS</div>
+        <div class="action-btn">📖<br>LOGS</div>
+    </div>
+
+    <div class="form-card">
+        <div class="section-title">Smart Entry Form</div>
+        <div class="input-group" style="text-align: center;">
+            <label>Amount (PKR)</label>
+            <input type="number" id="amt" class="amount-input" placeholder="Rs 0.00">
+        </div>
+        <div class="input-group">
+            <label>Category</label>
+            <select id="cat">
+                <option value="billing">Customer Billing</option>
+                <option value="day_expense">Daily Expense</option>
+                <option value="salaries">Salaries</option>
+                <option value="yarn_purchasing">Yarn Purchase</option>
+            </select>
+        </div>
+        <button class="sync-btn" onclick="syncData()">☁️ SYNC TO DASHBOARD</button>
+    </div>
+
+    <div class="section-title">Machine Control Center</div>
+    <div class="machine-grid" id="m-controls">
+        </div>
+
+    <div class="status-footer">● Cloud Live</div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDQPZgxyZVbWV5ZdaSBYAPcRXmmvLjFOUc",
+            authDomain: "factory-erp-1ce2e.firebaseapp.com",
+            databaseURL: "https://factory-erp-1ce2e-default-rtdb.firebaseio.com",
+            projectId: "factory-erp-1ce2e",
+            storageBucket: "factory-erp-1ce2e.firebasestorage.app",
+            messagingSenderId: "869539445584",
+            appId: "1:869539445584:web:75788a096b823829c10a55"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref('factory_data');
+
+        let currentData = {};
+
+        db.on('value', snap => {
+            currentData = snap.val() || { monthlyBilling: 0, expenses: {}, machines: [] };
+            renderMachines();
+        });
+
+        function renderMachines() {
+            const html = currentData.machines.map((m, index) => `
+                <div class="m-admin-card">
+                    <div class="m-head">
+                        <b>M-${m.id}</b>
+                        <label class="switch">
+                            <input type="checkbox" ${m.status==='RUNNING'?'checked':''} onchange="toggleMachine(${index})">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <input type="text" value="${m.job}" placeholder="Job ID" onchange="updateJob(${index}, this.value)" 
+                           style="padding:5px; font-size:10px; height:auto;">
+                    <div style="font-size:10px; color:${m.status==='RUNNING'? 'var(--green)':'#ff4757'}; margin-top:5px;">
+                        ${m.status}
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('m-controls').innerHTML = html;
+        }
+
+        function syncData() {
+            const val = parseInt(document.getElementById('amt').value) || 0;
+            const cat = document.getElementById('cat').value;
+            
+            if(cat === 'billing') currentData.monthlyBilling += val;
+            else {
+                if(!currentData.expenses) currentData.expenses = {};
+                currentData.expenses[cat] = (currentData.expenses[cat] || 0) + val;
+            }
+
+            db.set(currentData).then(() => {
+                alert("Cloud Updated!");
+                document.getElementById('amt').value = '';
+            });
+        }
+
+        function toggleMachine(index) {
+            currentData.machines[index].status = currentData.machines[index].status === 'RUNNING' ? 'STOPPED' : 'RUNNING';
+            db.set(currentData);
+        }
+
+        function updateJob(index, val) {
+            currentData.machines[index].job = val;
+            db.set(currentData);
+        }
+    </script>
+</body>
+</html>

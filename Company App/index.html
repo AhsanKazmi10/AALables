@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WovenOps | Factory Ops Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --bg: #0b0e11; --card: #15191e; --border: #2d333b; --text: #adbac7;
+            --blue: #4da3ff; --green: #3cd070; --orange: #ff9f43; --red: #ff4757; --gray: #888;
+        }
+
+        body { 
+            background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; 
+            margin: 0; padding: 15px; font-size: 13px;
+        }
+
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px 15px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;
+        }
+
+        /* --- Machine Grid --- */
+        .machine-section { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 15px; }
+        .m-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; border-bottom: 5px solid #333; position: relative; }
+        .m-card.RUNNING { border-bottom-color: var(--green); }
+        .m-card.STOPPED { border-bottom-color: var(--red); }
+        .m-status-icon { position: absolute; top: 12px; right: 12px; }
+
+        /* --- Main Layout (Adjusted Columns) --- */
+        .bottom-layout { 
+            display: grid; 
+            grid-template-columns: 1fr 1.6fr 1.1fr; /* Center column ko bara rakha hai */
+            gap: 15px; 
+        }
+
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 15px; height: fit-content; }
+        .card h2 { font-size: 0.9rem; margin: 0 0 12px 0; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; border-left: 3px solid var(--blue); padding-left: 10px; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th { text-align: left; color: var(--gray); font-size: 10px; padding: 5px; border-bottom: 1px solid #2d333b; }
+        td { padding: 7px 5px; border-bottom: 1px solid #1c2128; font-size: 12px; }
+
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+        .tag.orange { background: rgba(255, 159, 67, 0.1); color: var(--orange); border: 1px solid var(--orange); }
+        .tag.green { background: rgba(60, 208, 112, 0.1); color: var(--green); border: 1px solid var(--green); }
+
+        /* Monthly Summary Visuals */
+        .summary-visual { 
+            background: #0b0e11; border-radius: 8px; padding: 20px; 
+            text-align: center; margin-bottom: 15px; border: 1px dashed #333;
+        }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .summary-item { padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px; }
+        .summary-item span { display: block; font-size: 10px; color: var(--gray); margin-bottom: 5px; }
+        .summary-item b { font-size: 1.1rem; color: #fff; }
+
+        .next-job { font-size: 10px; color: var(--gray); margin-top: 10px; padding-top: 10px; border-top: 1px solid #222; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div><b>FACTORY OPS DASHBOARD:</b> WOVEN LABELS - LIVE MONITOR</div>
+        <div style="color:var(--green)">● SYNCED</div>
+    </header>
+
+    <div class="machine-section" id="machine-display">
+        </div>
+
+    <div class="bottom-layout">
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="card">
+                <h2>Pending Orders</h2>
+                <table>
+                    <thead><tr><th>Order ID</th><th>Customer</th><th>Status</th></tr></thead>
+                    <tbody id="pending-list">
+                        <tr><td>#WL124</td><td>Adidas</td><td><span class="tag orange">Pending</span></td></tr>
+                        <tr><td>#WL125</td><td>Zara</td><td><span class="tag orange">Pending</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h2>Sampling</h2>
+                <table>
+                    <thead><tr><th>Order ID</th><th>Customer</th><th>Status</th></tr></thead>
+                    <tbody id="sampling-list">
+                        <tr><td>#WL126</td><td>H&M</td><td><span class="tag green">Sampling</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Monthly Summary (May)</h2>
+            <div class="summary-visual">
+                <div style="color:var(--gray); font-size: 11px; margin-bottom: 10px;">Net Profit Trend</div>
+                <h1 id="pro" style="margin:0; font-size: 2.5rem;">Rs. 0</h1>
+                <div id="profit-label" style="font-size: 12px;">Monthly Net Profit</div>
+            </div>
+            
+            <div class="summary-grid">
+                <div class="summary-item"><span>Total Revenue</span><b id="rev" style="color:var(--blue)">Rs. 0</b></div>
+                <div class="summary-item"><span>Total Expenditure</span><b id="exp" style="color:var(--orange)">Rs. 0</b></div>
+                <div class="summary-item"><span>Labels Produced</span><b id="labels-count">17,228</b></div>
+                <div class="summary-item"><span>Yarn Consumed</span><b id="yarn-cons">10.2 kg</b></div>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="card">
+                <h2>Yarn Inventory</h2>
+                <table>
+                    <thead><tr><th>Type</th><th>Qty</th></tr></thead>
+                    <tbody>
+                        <tr><td>Polyester</td><td>200kg</td></tr>
+                        <tr><td>Cotton</td><td>50kg</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h2>Daily Expense Log</h2>
+                <table id="exp-table">
+                    </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDQPZgxyZVbWV5ZdaSBYAPcRXmmvLjFOUc",
+            authDomain: "factory-erp-1ce2e.firebaseapp.com",
+            databaseURL: "https://factory-erp-1ce2e-default-rtdb.firebaseio.com",
+            projectId: "factory-erp-1ce2e",
+            storageBucket: "factory-erp-1ce2e.firebasestorage.app",
+            messagingSenderId: "869539445584",
+            appId: "1:869539445584:web:75788a096b823829c10a55"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref('factory_data');
+
+        db.on('value', snap => {
+            const data = snap.val();
+            if(!data) return;
+
+            // Finance
+            const revenue = data.monthlyBilling || 0;
+            const expenses = Object.values(data.expenses || {}).reduce((a, b) => a + b, 0);
+            const profit = revenue - expenses;
+
+            document.getElementById('rev').innerText = `Rs. ${revenue.toLocaleString()}`;
+            document.getElementById('exp').innerText = `Rs. ${expenses.toLocaleString()}`;
+            document.getElementById('pro').innerText = `Rs. ${profit.toLocaleString()}`;
+            document.getElementById('pro').style.color = profit >= 0 ? "var(--green)" : "var(--red)";
+
+            // Machines
+            document.getElementById('machine-display').innerHTML = (data.machines || []).map(m => `
+                <div class="m-card ${m.status}">
+                    <div class="m-status-icon">${m.status==='RUNNING'?'✅':'❌'}</div>
+                    <div style="font-size:11px; color:var(--gray)">MACHINE ${m.id}</div>
+                    <div style="font-weight:bold; font-size:14px; margin:5px 0; color:${m.status==='RUNNING'?'var(--green)':'var(--red)'}">${m.status}</div>
+                    <div style="font-size:12px; color:#fff;">${m.job || 'NO ACTIVE JOB'}</div>
+                    <div class="next-job">Next: Zara Labels - 5000m</div>
+                </div>
+            `).join('');
+
+            // Expenses Table
+            document.getElementById('exp-table').innerHTML = Object.entries(data.expenses || {}).map(([k,v]) => `
+                <tr><td>${k.toUpperCase()}</td><td style="text-align:right"><b>Rs. ${v.toLocaleString()}</b></td></tr>
+            `).join('');
+        });
+    </script>
+</body>
+</html>

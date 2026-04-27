@@ -2,152 +2,199 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WovenOps | Admin Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WovenOps | Factory Ops Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
     <style>
-        :root { --bg: #0b0e11; --card: #15191e; --blue: #4da3ff; --green: #3cd070; --orange: #ff9f43; --text: #adbac7; --border: #2d333b; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 15px; user-select: none; }
+        :root {
+            --bg: #0b0e11; --card: #15191e; --border: #2d333b; --text: #adbac7;
+            --blue: #4da3ff; --green: #3cd070; --orange: #ff9f43; --red: #ff4757; --gray: #888;
+        }
+
+        body { 
+            background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; 
+            margin: 0; padding: 15px; font-size: 13px;
+        }
+
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px 15px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;
+        }
+
+        .fs-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--text);
+            padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px;
+        }
+        .fs-btn:hover { background: var(--border); }
+
+        .machine-section { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 15px; }
+        .m-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; border-bottom: 5px solid #333; position: relative; }
+        .m-card.RUNNING { border-bottom-color: var(--green); }
+        .m-card.STOPPED { border-bottom-color: var(--red); }
+        .m-status-icon { position: absolute; top: 12px; right: 12px; }
+
+        .bottom-layout { 
+            display: grid; 
+            grid-template-columns: 1fr 1.6fr 1.1fr; 
+            gap: 15px; 
+        }
+
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 15px; height: fit-content; }
+        .card h2 { font-size: 0.9rem; margin: 0 0 12px 0; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; border-left: 3px solid var(--blue); padding-left: 10px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th { text-align: left; color: var(--gray); font-size: 10px; padding: 5px; border-bottom: 1px solid #2d333b; }
+        td { padding: 7px 5px; border-bottom: 1px solid #1c2128; font-size: 12px; }
+
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+        .tag.orange { background: rgba(255, 159, 67, 0.1); color: var(--orange); border: 1px solid var(--orange); }
+        .tag.green { background: rgba(60, 208, 112, 0.1); color: var(--green); border: 1px solid var(--green); }
+
+        .summary-visual { 
+            background: #0b0e11; border-radius: 8px; padding: 20px; 
+            text-align: center; margin-bottom: 15px; border: 1px dashed #333;
+        }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .summary-item { padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px; }
+        .summary-item span { display: block; font-size: 10px; color: var(--gray); margin-bottom: 5px; }
+        .summary-item b { font-size: 1.1rem; color: #fff; }
+
+        .next-job { font-size: 10px; color: var(--gray); margin-top: 10px; padding-top: 10px; border-top: 1px solid #222; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .logo { font-weight: bold; font-size: 1.2rem; color: #fff; }
-        .logo span { color: var(--blue); }
-
-        /* Quick Actions */
-        .section-title { font-size: 0.9rem; margin-bottom: 10px; color: #fff; }
-        .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .action-btn { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 5px; text-align: center; font-size: 0.7rem; cursor: pointer; }
-        .action-btn i { display: block; font-size: 1.2rem; margin-bottom: 5px; }
-        .action-btn.active { border-color: var(--blue); background: rgba(77, 163, 255, 0.1); }
-
-        /* Entry Form */
-        .form-card { background: var(--card); border: 1px solid var(--border); border-radius: 15px; padding: 20px; margin-bottom: 20px; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px; }
-        input, select { width: 100%; background: #0b0e11; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 8px; box-sizing: border-box; }
-        .amount-input { font-size: 2rem; font-weight: bold; color: var(--blue); text-align: center; border: none; background: transparent; }
-
-        .sync-btn { width: 100%; background: var(--blue); color: #fff; border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-
-        /* Machine Center */
-        .machine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .m-admin-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
-        .m-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.8rem; }
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--green); }
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        .status-footer { text-align: center; font-size: 0.8rem; color: var(--green); margin-top: 20px; }
+        /* New styling for merged expense box */
+        .expense-row { display: flex; justify-content: space-between; padding: 8px 5px; border-bottom: 1px solid #1c2128; }
+        .expense-row:last-child { border-bottom: none; }
+        .cat-label { color: var(--gray); font-size: 11px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="logo">Woven<span>Ops</span> | Admin</div>
-        <div style="font-size: 0.8rem;">👤 Logout</div>
-    </div>
-
-    <div class="section-title">Quick Actions</div>
-    <div class="quick-actions">
-        <div class="action-btn active">💰<br>CASH IN</div>
-        <div class="action-btn">☕<br>EXPENSE</div>
-        <div class="action-btn">⚙️<br>STATUS</div>
-        <div class="action-btn">📖<br>LOGS</div>
-    </div>
-
-    <div class="form-card">
-        <div class="section-title">Smart Entry Form</div>
-        <div class="input-group" style="text-align: center;">
-            <label>Amount (PKR)</label>
-            <input type="number" id="amt" class="amount-input" placeholder="Rs 0.00">
+    <header>
+        <div><b>FACTORY OPS:</b> LIVE MONITOR</div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div id="sync-status" style="color:var(--green); font-size: 11px;">● SYNCED</div>
+            <button class="fs-btn" onclick="toggleFS()">⛶ FULLSCREEN</button>
         </div>
-        <div class="input-group">
-            <label>Category</label>
-            <select id="cat">
-                <option value="billing">Customer Billing</option>
-                <option value="day_expense">Daily Expense</option>
-                <option value="salaries">Salaries</option>
-                <option value="yarn_purchasing">Yarn Purchase</option>
-            </select>
-        </div>
-        <button class="sync-btn" onclick="syncData()">☁️ SYNC TO DASHBOARD</button>
-    </div>
+    </header>
 
-    <div class="section-title">Machine Control Center</div>
-    <div class="machine-grid" id="m-controls">
+    <div class="machine-section" id="machine-display"></div>
+
+    <div class="bottom-layout">
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="card">
+                <h2>Pending Orders</h2>
+                <table>
+                    <thead><tr><th>Order ID</th><th>Customer</th><th>Status</th></tr></thead>
+                    <tbody>
+                        <tr><td>#WL124</td><td>Adidas</td><td><span class="tag orange">Pending</span></td></tr>
+                        <tr><td>#WL125</td><td>Zara</td><td><span class="tag orange">Pending</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h2>Sampling</h2>
+                <table>
+                    <thead><tr><th>Order ID</th><th>Customer</th><th>Status</th></tr></thead>
+                    <tbody>
+                        <tr><td>#WL126</td><td>H&M</td><td><span class="tag green">Sampling</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-    <div class="status-footer">● Cloud Live</div>
+        <div class="card">
+            <h2>Monthly Summary</h2>
+            <div class="summary-visual">
+                <div style="color:var(--gray); font-size: 11px; margin-bottom: 10px;">Net Profit Trend</div>
+                <h1 id="pro" style="margin:0; font-size: 2.5rem;">Rs. 0</h1>
+                <div style="font-size: 12px;">Monthly Net Profit</div>
+            </div>
+            
+            <div class="summary-grid">
+                <div class="summary-item"><span>Total Revenue</span><b id="rev" style="color:var(--blue)">Rs. 0</b></div>
+                <div class="summary-item"><span>Total Expenditure</span><b id="exp" style="color:var(--orange)">Rs. 0</b></div>
+                <div class="summary-item"><span>Labels Produced</span><b>17,228</b></div>
+                <div class="summary-item"><span>Yarn Consumed</span><b>10.2 kg</b></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Total Expenses</h2>
+            <div id="expense-breakdown">
+                <div class="expense-row"><span class="cat-label">Daily Expenses</span><b id="cat-daily">Rs. 0</b></div>
+                <div class="expense-row"><span class="cat-label">Yarn Purchasing</span><b id="cat-yarn">Rs. 0</b></div>
+                <div class="expense-row"><span class="cat-label">Utilities & Bills</span><b id="cat-util">Rs. 0</b></div>
+                <div class="expense-row"><span class="cat-label">Salaries / Adv</span><b id="cat-sal">Rs. 0</b></div>
+            </div>
+            <h2 style="margin-top: 20px; font-size: 0.8rem;">Recent Activity</h2>
+            <table id="recent-table">
+                </table>
+        </div>
+    </div>
 
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDQPZgxyZVbWV5ZdaSBYAPcRXmmvLjFOUc",
-            authDomain: "factory-erp-1ce2e.firebaseapp.com",
             databaseURL: "https://factory-erp-1ce2e-default-rtdb.firebaseio.com",
-            projectId: "factory-erp-1ce2e",
-            storageBucket: "factory-erp-1ce2e.firebasestorage.app",
-            messagingSenderId: "869539445584",
-            appId: "1:869539445584:web:75788a096b823829c10a55"
+            projectId: "factory-erp-1ce2e"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database().ref('factory_data');
 
-        let currentData = {};
+        function toggleFS() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
 
         db.on('value', snap => {
-            currentData = snap.val() || { monthlyBilling: 0, expenses: {}, machines: [] };
-            renderMachines();
-        });
+            const data = snap.val() || {};
 
-        function renderMachines() {
-            const html = currentData.machines.map((m, index) => `
-                <div class="m-admin-card">
-                    <div class="m-head">
-                        <b>M-${m.id}</b>
-                        <label class="switch">
-                            <input type="checkbox" ${m.status==='RUNNING'?'checked':''} onchange="toggleMachine(${index})">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <input type="text" value="${m.job}" placeholder="Job ID" onchange="updateJob(${index}, this.value)" 
-                           style="padding:5px; font-size:10px; height:auto;">
-                    <div style="font-size:10px; color:${m.status==='RUNNING'? 'var(--green)':'#ff4757'}; margin-top:5px;">
-                        ${m.status}
-                    </div>
+            // Calculate Category Wise
+            const sum = (o) => Object.values(o || {}).reduce((a, b) => a + (b.amt || 0), 0);
+            
+            const dSum = sum(data.daily_expenses);
+            const ySum = sum(data.yarn_purchasing);
+            const uSum = sum(data.utilities);
+            const sSum = sum(data.salaries);
+            const totalExp = dSum + ySum + uSum + sSum;
+            
+            const revenue = data.monthlyBilling || 0;
+            const profit = revenue - totalExp;
+
+            // Update Header & Summary
+            document.getElementById('rev').innerText = `Rs. ${revenue.toLocaleString()}`;
+            document.getElementById('exp').innerText = `Rs. ${totalExp.toLocaleString()}`;
+            document.getElementById('pro').innerText = `Rs. ${profit.toLocaleString()}`;
+            document.getElementById('pro').style.color = profit >= 0 ? "var(--green)" : "var(--red)";
+
+            // Update Right Side Breakdown
+            document.getElementById('cat-daily').innerText = `Rs. ${dSum.toLocaleString()}`;
+            document.getElementById('cat-yarn').innerText = `Rs. ${ySum.toLocaleString()}`;
+            document.getElementById('cat-util').innerText = `Rs. ${uSum.toLocaleString()}`;
+            document.getElementById('cat-sal').innerText = `Rs. ${sSum.toLocaleString()}`;
+
+            // Machines Update
+            document.getElementById('machine-display').innerHTML = (data.machines || []).map(m => `
+                <div class="m-card ${m.status}">
+                    <div class="m-status-icon">${m.status==='RUNNING'?'✅':'❌'}</div>
+                    <div style="font-size:11px; color:var(--gray)">MACHINE ${m.id}</div>
+                    <div style="font-weight:bold; font-size:14px; margin:5px 0; color:${m.status==='RUNNING'?'var(--green)':'var(--red)'}">${m.status}</div>
+                    <div style="font-size:12px; color:#fff;">${m.job || 'NO ACTIVE JOB'}</div>
+                    <div class="next-job">Next: Zara Labels - 5000m</div>
                 </div>
             `).join('');
-            document.getElementById('m-controls').innerHTML = html;
-        }
 
-        function syncData() {
-            const val = parseInt(document.getElementById('amt').value) || 0;
-            const cat = document.getElementById('cat').value;
-            
-            if(cat === 'billing') currentData.monthlyBilling += val;
-            else {
-                if(!currentData.expenses) currentData.expenses = {};
-                currentData.expenses[cat] = (currentData.expenses[cat] || 0) + val;
-            }
+            // Recent activity from all categories
+            const allItems = [
+                ...Object.values(data.daily_expenses || {}).map(i => ({n: i.item, a: i.amt})),
+                ...Object.values(data.salaries || {}).map(i => ({n: i.worker, a: i.amt}))
+            ].reverse().slice(0, 5);
 
-            db.set(currentData).then(() => {
-                alert("Cloud Updated!");
-                document.getElementById('amt').value = '';
-            });
-        }
-
-        function toggleMachine(index) {
-            currentData.machines[index].status = currentData.machines[index].status === 'RUNNING' ? 'STOPPED' : 'RUNNING';
-            db.set(currentData);
-        }
-
-        function updateJob(index, val) {
-            currentData.machines[index].job = val;
-            db.set(currentData);
-        }
+            document.getElementById('recent-table').innerHTML = allItems.map(e => `
+                <tr><td>${e.n}</td><td style="text-align:right"><b>Rs. ${e.a.toLocaleString()}</b></td></tr>
+            `).join('');
+        });
     </script>
 </body>
 </html>

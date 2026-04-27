@@ -14,6 +14,12 @@
         .logo { font-weight: bold; font-size: 1.2rem; color: #fff; }
         .logo span { color: var(--blue); }
 
+        /* Mode Switcher Design */
+        .mode-container { background: var(--card); border: 1px solid var(--border); border-radius: 12px; display: flex; padding: 5px; margin-bottom: 20px; }
+        .mode-btn { flex: 1; padding: 10px; text-align: center; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .mode-btn.active { background: var(--blue); color: #fff; }
+        .mode-btn.active.billing { background: var(--green); }
+
         .section-title { font-size: 0.8rem; margin-bottom: 10px; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
         .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
         .action-btn { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 5px; text-align: center; font-size: 0.65rem; cursor: pointer; }
@@ -27,12 +33,10 @@
 
         .sync-btn { width: 100%; background: var(--blue); color: #fff; border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
-        /* Machine Admin Grid */
         .machine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .m-admin-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
         .m-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         
-        /* The Switch UI */
         .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
@@ -40,7 +44,7 @@
         input:checked + .slider { background-color: var(--green); }
         input:checked + .slider:before { transform: translateX(16px); }
 
-        .logs-container { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 20px; }
+        .logs-container { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 20px; min-height: 50px; }
         .log-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #1c2128; font-size: 11px; }
         .del-btn { color: var(--red); background: none; border: none; font-size: 14px; cursor: pointer; }
 
@@ -50,34 +54,41 @@
 <body id="admin-body">
 
     <div class="header">
-        <div class="logo">Woven<span>Ops</span> | Terminal</div>
+        <div class="logo">AA<span>LABLES</span> | Terminal</div>
         <div style="font-size: 0.8rem; color: var(--orange);" onclick="location.reload()">🔒 Secure</div>
     </div>
 
-    <div class="section-title">Quick Select</div>
-    <div class="quick-actions">
-        <div class="action-btn active" onclick="setCat('daily_expenses', this)">💰 DAILY</div>
-        <div class="action-btn" onclick="setCat('yarn_purchasing', this)">🧵 YARN</div>
-        <div class="action-btn" onclick="setCat('utilities', this)">⚡ UTILS</div>
-        <div class="action-btn" onclick="setCat('salaries', this)">👷 SALARY</div>
+    <div class="mode-container">
+        <div id="btn-exp" class="mode-btn active" onclick="switchMode('EXPENSE')">EXPENSES</div>
+        <div id="btn-rev" class="mode-btn" onclick="switchMode('BILLING')">BILLING</div>
+    </div>
+
+    <div id="expense-controls">
+        <div class="section-title">Quick Select</div>
+        <div class="quick-actions">
+            <div class="action-btn active" onclick="setCat('daily_expenses', this)">💰 DAILY</div>
+            <div class="action-btn" onclick="setCat('yarn_purchasing', this)">🧵 YARN</div>
+            <div class="action-btn" onclick="setCat('utilities', this)">⚡ UTILS</div>
+            <div class="action-btn" onclick="setCat('salaries', this)">👷 SALARY</div>
+        </div>
     </div>
 
     <div class="form-card">
         <div class="input-group" style="text-align: center;">
-            <label>Amount (PKR)</label>
+            <label id="label-amt">Expense Amount (PKR)</label>
             <input type="number" id="amt" class="amount-input" placeholder="0">
         </div>
-        <div class="input-group">
-            <label>Item Name / Description</label>
-            <input type="text" id="desc" placeholder="Details">
+        <div class="input-group" id="desc-group">
+            <label>Description</label>
+            <input type="text" id="desc" placeholder="Details...">
         </div>
-        <button class="sync-btn" onclick="syncData()">☁️ SYNC TO CLOUD</button>
+        <button class="sync-btn" id="main-sync-btn" onclick="syncData()">☁️ SYNC TO CLOUD</button>
     </div>
 
     <div class="section-title">Machine Switches</div>
     <div class="machine-grid" id="m-controls"></div>
 
-    <div class="section-title">Recent Records (Category Wise)</div>
+    <div class="section-title" id="recent-title">Recent Records</div>
     <div class="logs-container" id="recent-logs"></div>
 
     <div class="danger-zone">
@@ -97,8 +108,38 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database().ref('factory_data');
 
+        let currentMode = 'EXPENSE';
         let selectedCat = 'daily_expenses';
         let machineData = [];
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const bExp = document.getElementById('btn-exp');
+            const bRev = document.getElementById('btn-rev');
+            const syncBtn = document.getElementById('main-sync-btn');
+            
+            if(mode === 'BILLING') {
+                bRev.classList.add('active', 'billing');
+                bExp.classList.remove('active');
+                document.getElementById('expense-controls').style.display = 'none';
+                document.getElementById('desc-group').style.display = 'none';
+                document.getElementById('label-amt').innerText = "Total Monthly Billing (Update)";
+                document.getElementById('amt').style.color = "var(--green)";
+                syncBtn.style.background = "var(--green)";
+                syncBtn.innerText = "💹 UPDATE BILLING";
+                loadBillingStatus();
+            } else {
+                bExp.classList.add('active');
+                bRev.classList.remove('active', 'billing');
+                document.getElementById('expense-controls').style.display = 'block';
+                document.getElementById('desc-group').style.display = 'block';
+                document.getElementById('label-amt').innerText = "Expense Amount (PKR)";
+                document.getElementById('amt').style.color = "var(--blue)";
+                syncBtn.style.background = "var(--blue)";
+                syncBtn.innerText = "☁️ SYNC TO CLOUD";
+                loadLogs();
+            }
+        }
 
         function setCat(cat, el) {
             selectedCat = cat;
@@ -107,7 +148,6 @@
             loadLogs();
         }
 
-        // Machine Switch System
         db.child('machines').on('value', snap => {
             machineData = snap.val() || [];
             document.getElementById('m-controls').innerHTML = machineData.map((m, i) => `
@@ -131,10 +171,20 @@
 
         function syncData() {
             const val = parseInt(document.getElementById('amt').value);
-            const d = document.getElementById('desc').value;
-            if(!val || !d) return;
-            db.child(selectedCat).push({ item: d, amt: val, date: new Date().toLocaleDateString() })
-            .then(() => { document.getElementById('amt').value = ''; document.getElementById('desc').value = ''; loadLogs(); });
+            if(isNaN(val)) return alert("Enter amount");
+
+            if(currentMode === 'BILLING') {
+                db.update({ monthlyBilling: val }).then(() => {
+                    alert("Billing Updated!");
+                    document.getElementById('amt').value = '';
+                    loadBillingStatus();
+                });
+            } else {
+                const d = document.getElementById('desc').value;
+                if(!d) return alert("Enter description");
+                db.child(selectedCat).push({ item: d, amt: val, date: new Date().toLocaleDateString() })
+                .then(() => { document.getElementById('amt').value = ''; document.getElementById('desc').value = ''; loadLogs(); });
+            }
         }
 
         function loadLogs() {
@@ -148,10 +198,19 @@
             });
         }
 
+        function loadBillingStatus() {
+            db.child('monthlyBilling').once('value', snap => {
+                document.getElementById('recent-logs').innerHTML = `
+                    <div style="text-align:center; padding:10px; color:var(--green)">
+                        Current Billing: <b>Rs. ${(snap.val() || 0).toLocaleString()}</b>
+                    </div>`;
+            });
+        }
+
         function del(key) { if(confirm("Delete?")) db.child(selectedCat).child(key).remove().then(() => loadLogs()); }
 
         function masterReset() {
-            if(prompt("Enter PIN to format data:") === "1234") {
+            if(prompt("Reset PIN:") === "Ahsan123") {
                 db.update({ daily_expenses: null, yarn_purchasing: null, utilities: null, salaries: null, monthlyBilling: 0 })
                 .then(() => location.reload());
             }

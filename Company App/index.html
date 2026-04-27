@@ -14,7 +14,7 @@
 
         body { 
             background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; 
-            margin: 0; padding: 15px; font-size: 13px;
+            margin: 0; padding: 10px; font-size: 13px;
         }
 
         header { 
@@ -22,23 +22,36 @@
             padding: 10px 15px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;
         }
 
-        .fs-btn {
-            background: transparent; border: 1px solid var(--border); color: var(--text);
-            padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px;
+        /* Machine Section Responsive */
+        .machine-section { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 12px; margin-bottom: 15px; 
         }
-        .fs-btn:hover { background: var(--border); }
 
-        .machine-section { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 15px; }
+        /* Big Screen (44 inch) layout */
+        @media (min-width: 1200px) {
+            .machine-section { grid-template-columns: repeat(4, 1fr); }
+            .bottom-layout { 
+                display: grid; 
+                grid-template-columns: 1fr 1.6fr 1.1fr; 
+                gap: 15px; 
+            }
+        }
+
+        /* Tablet/Mobile layout */
+        @media (max-width: 1199px) {
+            .bottom-layout { 
+                display: flex; 
+                flex-direction: column; 
+                gap: 15px; 
+            }
+        }
+
         .m-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; border-bottom: 5px solid #333; position: relative; }
         .m-card.RUNNING { border-bottom-color: var(--green); }
         .m-card.STOPPED { border-bottom-color: var(--red); }
         .m-status-icon { position: absolute; top: 12px; right: 12px; }
-
-        .bottom-layout { 
-            display: grid; 
-            grid-template-columns: 1fr 1.6fr 1.1fr; 
-            gap: 15px; 
-        }
 
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 15px; height: fit-content; }
         .card h2 { font-size: 0.9rem; margin: 0 0 12px 0; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; border-left: 3px solid var(--blue); padding-left: 10px; }
@@ -61,20 +74,20 @@
         .summary-item b { font-size: 1.1rem; color: #fff; }
 
         .next-job { font-size: 10px; color: var(--gray); margin-top: 10px; padding-top: 10px; border-top: 1px solid #222; }
-        
-        /* New styling for merged expense box */
         .expense-row { display: flex; justify-content: space-between; padding: 8px 5px; border-bottom: 1px solid #1c2128; }
         .expense-row:last-child { border-bottom: none; }
         .cat-label { color: var(--gray); font-size: 11px; text-transform: uppercase; }
+
+        .fs-btn { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px; }
     </style>
 </head>
 <body>
 
     <header>
         <div><b>FACTORY OPS:</b> LIVE MONITOR</div>
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <div id="sync-status" style="color:var(--green); font-size: 11px;">● SYNCED</div>
-            <button class="fs-btn" onclick="toggleFS()">⛶ FULLSCREEN</button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div id="sync-status" style="color:var(--green); font-size: 10px;">● SYNCED</div>
+            <button class="fs-btn" onclick="toggleFS()">⛶ FS</button>
         </div>
     </header>
 
@@ -85,7 +98,7 @@
             <div class="card">
                 <h2>Pending Orders</h2>
                 <table>
-                    <thead><tr><th>Order ID</th><th>Customer</th><th>Status</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Customer</th><th>Status</th></tr></thead>
                     <tbody>
                         <tr><td>#WL124</td><td>Adidas</td><td><span class="tag orange">Pending</span></td></tr>
                         <tr><td>#WL125</td><td>Zara</td><td><span class="tag orange">Pending</span></td></tr>
@@ -95,7 +108,7 @@
             <div class="card">
                 <h2>Sampling</h2>
                 <table>
-                    <thead><tr><th>Order ID</th><th>Customer</th><th>Status</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Customer</th><th>Status</th></tr></thead>
                     <tbody>
                         <tr><td>#WL126</td><td>H&M</td><td><span class="tag green">Sampling</span></td></tr>
                     </tbody>
@@ -122,14 +135,13 @@
         <div class="card">
             <h2>Total Expenses</h2>
             <div id="expense-breakdown">
-                <div class="expense-row"><span class="cat-label">Daily Expenses</span><b id="cat-daily">Rs. 0</b></div>
-                <div class="expense-row"><span class="cat-label">Yarn Purchasing</span><b id="cat-yarn">Rs. 0</b></div>
-                <div class="expense-row"><span class="cat-label">Utilities & Bills</span><b id="cat-util">Rs. 0</b></div>
-                <div class="expense-row"><span class="cat-label">Salaries / Adv</span><b id="cat-sal">Rs. 0</b></div>
+                <div class="expense-row"><span class="cat-label">Daily</span><b id="cat-daily">Rs. 0</b></div>
+                <div class="expense-row"><span class="cat-label">Yarn</span><b id="cat-yarn">Rs. 0</b></div>
+                <div class="expense-row"><span class="cat-label">Utilities</span><b id="cat-util">Rs. 0</b></div>
+                <div class="expense-row"><span class="cat-label">Salaries</span><b id="cat-sal">Rs. 0</b></div>
             </div>
             <h2 style="margin-top: 20px; font-size: 0.8rem;">Recent Activity</h2>
-            <table id="recent-table">
-                </table>
+            <table id="recent-table"></table>
         </div>
     </div>
 
@@ -149,8 +161,6 @@
 
         db.on('value', snap => {
             const data = snap.val() || {};
-
-            // Calculate Category Wise
             const sum = (o) => Object.values(o || {}).reduce((a, b) => a + (b.amt || 0), 0);
             
             const dSum = sum(data.daily_expenses);
@@ -158,37 +168,32 @@
             const uSum = sum(data.utilities);
             const sSum = sum(data.salaries);
             const totalExp = dSum + ySum + uSum + sSum;
-            
             const revenue = data.monthlyBilling || 0;
             const profit = revenue - totalExp;
 
-            // Update Header & Summary
             document.getElementById('rev').innerText = `Rs. ${revenue.toLocaleString()}`;
             document.getElementById('exp').innerText = `Rs. ${totalExp.toLocaleString()}`;
             document.getElementById('pro').innerText = `Rs. ${profit.toLocaleString()}`;
             document.getElementById('pro').style.color = profit >= 0 ? "var(--green)" : "var(--red)";
 
-            // Update Right Side Breakdown
             document.getElementById('cat-daily').innerText = `Rs. ${dSum.toLocaleString()}`;
             document.getElementById('cat-yarn').innerText = `Rs. ${ySum.toLocaleString()}`;
             document.getElementById('cat-util').innerText = `Rs. ${uSum.toLocaleString()}`;
             document.getElementById('cat-sal').innerText = `Rs. ${sSum.toLocaleString()}`;
 
-            // Machines Update
             document.getElementById('machine-display').innerHTML = (data.machines || []).map(m => `
                 <div class="m-card ${m.status}">
                     <div class="m-status-icon">${m.status==='RUNNING'?'✅':'❌'}</div>
-                    <div style="font-size:11px; color:var(--gray)">MACHINE ${m.id}</div>
+                    <div style="font-size:11px; color:var(--gray)">M-${m.id}</div>
                     <div style="font-weight:bold; font-size:14px; margin:5px 0; color:${m.status==='RUNNING'?'var(--green)':'var(--red)'}">${m.status}</div>
-                    <div style="font-size:12px; color:#fff;">${m.job || 'NO ACTIVE JOB'}</div>
-                    <div class="next-job">Next: Zara Labels - 5000m</div>
+                    <div style="font-size:12px; color:#fff;">${m.job || 'IDLE'}</div>
                 </div>
             `).join('');
 
-            // Recent activity from all categories
             const allItems = [
                 ...Object.values(data.daily_expenses || {}).map(i => ({n: i.item, a: i.amt})),
-                ...Object.values(data.salaries || {}).map(i => ({n: i.worker, a: i.amt}))
+                ...Object.values(data.salaries || {}).map(i => ({n: i.worker, a: i.amt})),
+                ...Object.values(data.utilities || {}).map(i => ({n: i.item, a: i.amt}))
             ].reverse().slice(0, 5);
 
             document.getElementById('recent-table').innerHTML = allItems.map(e => `
@@ -197,4 +202,3 @@
         });
     </script>
 </body>
-</html>
